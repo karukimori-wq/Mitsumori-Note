@@ -1,18 +1,6 @@
-const projects = [
-  { name: "コーポレートサイト制作", client: "株式会社ABC", status: "作業中", amount: "¥320,000", due: "7/25", progress: 68 },
-  { name: "LPデザイン・実装", client: "山田商店", status: "見積提出済", amount: "¥180,000", due: "8/02", progress: 0 },
-  { name: "ブランドロゴ制作", client: "Studio N", status: "作業中", amount: "¥90,000", due: "7/28", progress: 42 },
-];
-
-export default function Home() {
-  return <main className="shell">
-    <aside><h2>Mitsumori Note</h2><nav><b>ダッシュボード</b><span>案件</span><span>カレンダー</span><span>顧客</span><span>過去案件</span><span>設定</span></nav></aside>
-    <section className="content">
-      <header><div><h1>ダッシュボード</h1><p>見積もりから入金まで、仕事をひとつにつなげる。</p></div><button>＋ 新規案件</button></header>
-      <div className="stats"><Card t="今週の納期" v="3件"/><Card t="進行中案件" v="5件"/><Card t="見積提出中" v="2件"/><Card t="今月の売上見込" v="¥650,000"/></div>
-      <div className="panel"><h3>進行中の案件</h3>{projects.map(p=><div className="project" key={p.name}><div><strong>{p.name}</strong><small>{p.client}</small></div><em>{p.status}</em><b>{p.amount}</b><span>納期 {p.due}</span><span>{p.progress}%</span></div>)}</div>
-      <div className="panel review"><div><h3>見積もりの答え合わせ</h3><p>案件が終わったら、想定と実績を比較。次の見積もりに経験を残します。</p></div><b>見積 → 受注 → 実績 → 答え合わせ → 次の見積へ</b></div>
-    </section>
-  </main>
-}
+"use client";
+import{useEffect,useMemo,useState}from"react";
+import{loadProjects,ProjectRecord}from"./lib/storage";
+const yen=(n:number)=>new Intl.NumberFormat("ja-JP",{style:"currency",currency:"JPY",maximumFractionDigits:0}).format(n);
+export default function Home(){const[projects,setProjects]=useState<ProjectRecord[]>([]);useEffect(()=>setProjects(loadProjects()),[]);const active=projects.filter(p=>!["完了","失注"].includes(p.status));const estimating=projects.filter(p=>p.status.includes("見積"));const sales=active.reduce((a,p)=>a+p.amount,0);const dueSoon=useMemo(()=>active.filter(p=>p.clientDue).slice(0,3),[projects]);return <main className="content"><header><div><h1>ダッシュボード</h1><p>見積もりから入金まで、仕事をひとつにつなげる。</p></div><a href="/projects/new"><button>＋ 新規案件</button></a></header><div className="stats"><Card t="今週の納期" v={`${dueSoon.length}件`}/><Card t="進行中案件" v={`${active.length}件`}/><Card t="見積提出中" v={`${estimating.length}件`}/><Card t="売上見込" v={yen(sales)}/></div><div className="panel"><div className="sectionTitle"><h3>進行中の案件</h3><a href="/projects">すべて見る →</a></div>{active.length===0?<div className="emptyState"><p>進行中の案件はありません。</p></div>:active.slice(0,5).map(p=><a className="project" href={`/projects/${p.id}`} key={p.id}><div><strong>{p.name}</strong><small>{p.client}</small></div><em>{p.status}</em><b>{yen(p.amount)}</b><span>納期 {p.clientDue||"未設定"}</span><span>→</span></a>)}</div><div className="panel review"><div><h3>見積もりの答え合わせ</h3><p>案件が終わったら、想定と実績を比較。次の見積もりに経験を残します。</p></div><b>見積 → 受注 → 実績 → 答え合わせ → 次の見積へ</b></div></main>}
 function Card({t,v}:{t:string,v:string}){return <div className="card"><small>{t}</small><strong>{v}</strong></div>}
